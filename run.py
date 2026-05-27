@@ -56,7 +56,7 @@ pyg_data, adj_dense, ano_label = load_data(args.dataset)
 pyg_data = pyg_data.to(device)
 adj_t = adj_dense.to(device)
 normal_mask = (pyg_data.y == 0)
-
+normal_adj = adj_t[normal_mask][:, normal_mask]
 # تعریف مدل
 model = GCN_mamba_Net(pyg_data, args).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -70,9 +70,9 @@ def train():
     sub_mask = normal_mask.to(device)
     
     # مدل حالا دو مقدار برمی‌گرداند
-    emb1, _ = model(pyg_data.x[sub_mask], view1_adj[sub_mask][:, sub_mask])
-    emb2, _ = model(pyg_data.x[sub_mask], view2_adj[sub_mask][:, sub_mask])
-    
+    emb1, _ = model(pyg_data.x[normal_mask], random_drop_edges(normal_adj, args.drop_rate1))
+    emb2, _ = model(pyg_data.x[normal_mask], random_drop_edges(normal_adj, args.drop_rate2))
+        
     loss = info_nce_loss(emb1, emb2, args.temperature)
     loss.backward()
     
